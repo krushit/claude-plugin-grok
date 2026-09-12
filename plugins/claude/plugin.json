@@ -4,5 +4,7 @@
   "description": "Use Claude as a Grok stop-time review gate.",
   "author": {
     "name": "krushit"
-  }
+  },
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
 }

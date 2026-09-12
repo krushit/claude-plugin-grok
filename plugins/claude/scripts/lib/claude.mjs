@@ -38,20 +38,29 @@ export function getClaudeAvailability(cwd) {
   return { available: true, binary, detail: version.detail };
 }
 
-export function getClaudeAuthStatus() {
-  const claudeJson = path.join(os.homedir(), ".claude.json");
-  if (!fs.existsSync(claudeJson)) {
-    return { loggedIn: false, detail: "not signed in (no ~/.claude.json). Run `claude` and log in." };
+export function getClaudeAuthStatus(cwd) {
+  const binary = resolveClaudeBinary();
+  if (!binary) {
+    return { loggedIn: false, detail: "claude CLI not found. Run `claude auth login`." };
   }
+  const result = runCommand(binary, ["auth", "status"], { cwd, timeout: 20_000 });
+  const text = `${result.stdout || ""}\n${result.stderr || ""}`.trim();
   try {
-    const parsed = JSON.parse(fs.readFileSync(claudeJson, "utf8"));
-    if (parsed && typeof parsed === "object") {
-      return { loggedIn: true, detail: "signed in" };
+    const parsed = JSON.parse(result.stdout.trim() || text);
+    if (parsed && parsed.loggedIn === true) {
+      const who = parsed.email ? ` as ${parsed.email}` : "";
+      return { loggedIn: true, detail: `signed in${who}` };
+    }
+    if (parsed && parsed.loggedIn === false) {
+      return { loggedIn: false, detail: "not signed in. Run `claude auth login`." };
     }
   } catch {
-    return { loggedIn: false, detail: "~/.claude.json is unreadable. Run `claude` and log in." };
+    // fall through to text
   }
-  return { loggedIn: false, detail: "not signed in. Run `claude` and log in." };
+  if (result.status === 0 && /loggedIn"?\s*:\s*true|signed in|logged in/i.test(text)) {
+    return { loggedIn: true, detail: "signed in" };
+  }
+  return { loggedIn: false, detail: "not signed in. Run `claude auth login`." };
 }
 
 export function runClaudeReview({ cwd, prompt, schemaJson, timeoutMs = DEFAULT_TIMEOUT_MS }) {
@@ -67,11 +76,12 @@ export function runClaudeReview({ cwd, prompt, schemaJson, timeoutMs = DEFAULT_T
     "--json-schema",
     schemaJson,
     "--permission-mode",
-    "bypassPermissions",
+    "dontAsk",
     "--allowedTools",
-    "Read,Grep,Glob,Bash",
+    "Read,Grep,Glob",
     "--disallowedTools",
-    "Edit,Write,Agent",
+    "Edit,Write,Agent,Bash",
+    "--",
     prompt
   ];
   const result = runCommand(availability.binary, args, {
