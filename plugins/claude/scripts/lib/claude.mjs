@@ -75,12 +75,16 @@ export function runClaudeReview({ cwd, prompt, schemaJson, timeoutMs = DEFAULT_T
     "json",
     "--json-schema",
     schemaJson,
+    "--restricted",
+    "--strict-mcp-config",
+    "--mcp-config",
+    "{}",
     "--permission-mode",
     "dontAsk",
     "--allowedTools",
     "Read,Grep,Glob",
     "--disallowedTools",
-    "Edit,Write,Agent,Bash",
+    "Edit,Write,Agent,Bash,NotebookEdit,WebFetch,WebSearch",
     "--",
     prompt
   ];

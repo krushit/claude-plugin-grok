@@ -10,10 +10,10 @@ import { getClaudeAvailability, runClaudeReview } from "./lib/claude.mjs";
 import { formatGitSnapshot } from "./lib/git.mjs";
 import { parseStopDecision } from "./lib/parse.mjs";
 import { interpolateTemplate, loadJsonSchema, loadPromptTemplate } from "./lib/prompts.mjs";
-import { getConfig } from "./lib/state.mjs";
+import { getConfig, resolveStateDir } from "./lib/state.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
 
-const STOP_REVIEW_TIMEOUT_MS = 15 * 60 * 1000;
+const STOP_REVIEW_TIMEOUT_MS = 12 * 60 * 1000;
 const MAX_MESSAGE_CHARS = 24_000;
 const ROOT_DIR = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 const FALLBACK_STATE_ROOT = path.join(os.homedir(), ".grok", "plugins", "data", "claude-plugin-grok", "state");
@@ -65,7 +65,10 @@ function main() {
 
   const availability = getClaudeAvailability(cwd);
   if (!availability.available) {
-    logNote(`Claude is not set up for the review gate. ${availability.detail} Run /claude:setup.`);
+    emit({
+      decision: "block",
+      reason: `Claude is unavailable while the review gate is enabled: ${availability.detail} Run /claude:setup or bypass the gate.`
+    });
     return;
   }
 
@@ -79,7 +82,7 @@ function main() {
           "</untrusted_last_message>"
         ].join("\n")
       : "",
-    GIT_SNAPSHOT_BLOCK: formatGitSnapshot(cwd)
+    GIT_SNAPSHOT_BLOCK: formatGitSnapshot(cwd, resolveStateDir(cwd, FALLBACK_STATE_ROOT))
   });
 
   let result;
