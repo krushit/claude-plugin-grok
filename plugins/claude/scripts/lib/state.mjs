@@ -6,8 +6,8 @@ import path from "node:path";
 import { resolveWorkspaceRoot } from "./workspace.mjs";
 
 const STATE_VERSION = 1;
-const PLUGIN_DATA_ENVS = ["GROK_PLUGIN_DATA", "CLAUDE_PLUGIN_DATA", "PLUGIN_DATA"];
 const STATE_FILE_NAME = "state.json";
+const STABLE_STATE_ROOT = path.join(os.homedir(), ".grok", "plugins", "data", "claude-plugin-grok", "state");
 
 function defaultState() {
   return {
@@ -18,16 +18,7 @@ function defaultState() {
   };
 }
 
-function pluginDataDir() {
-  for (const name of PLUGIN_DATA_ENVS) {
-    if (process.env[name]) {
-      return process.env[name];
-    }
-  }
-  return null;
-}
-
-export function resolveStateDir(cwd, fallbackRoot) {
+export function resolveStateDir(cwd, fallbackRoot = STABLE_STATE_ROOT) {
   const workspaceRoot = resolveWorkspaceRoot(cwd);
   let canonical = workspaceRoot;
   try {
@@ -38,9 +29,7 @@ export function resolveStateDir(cwd, fallbackRoot) {
   const slugSource = path.basename(workspaceRoot) || "workspace";
   const slug = slugSource.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workspace";
   const hash = createHash("sha256").update(canonical).digest("hex").slice(0, 16);
-  const dataDir = pluginDataDir();
-  const stateRoot = dataDir ? path.join(dataDir, "state") : fallbackRoot;
-  return path.join(stateRoot, `${slug}-${hash}`);
+  return path.join(STABLE_STATE_ROOT, `${slug}-${hash}`);
 }
 
 export function loadState(cwd, fallbackRoot) {
