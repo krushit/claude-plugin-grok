@@ -1,0 +1,15 @@
+{
+  "name": "claude-plugin-grok",
+  "description": "Use Claude as a Grok stop-time review gate.",
+  "owner": {
+    "name": "krushit"
+  },
+  "plugins": [
+    {
+      "name": "claude",
+      "description": "When Grok tries to stop, Claude reviews that turn and can block.",
+      "version": "1.0.0",
+      "source": "./plugins/claude"
+    }
+  ]
+}
