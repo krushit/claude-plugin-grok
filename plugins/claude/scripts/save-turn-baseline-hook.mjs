@@ -25,7 +25,8 @@ try {
   const cwd = resolveWorkspaceRoot(
     input.cwd || input.workspaceRoot || process.env.GROK_WORKSPACE_ROOT || process.cwd()
   );
-  saveTurnBaseline(cwd, resolveStateDir(cwd, FALLBACK_STATE_ROOT));
+  const sessionId = input.session_id || input.sessionId || process.env.GROK_SESSION_ID || "";
+  saveTurnBaseline(cwd, resolveStateDir(cwd, FALLBACK_STATE_ROOT), sessionId);
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
 }
